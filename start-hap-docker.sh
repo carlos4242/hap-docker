@@ -29,7 +29,8 @@ IMAGE="${1}"
 CONTAINER="${2}"
 NETWORK="${3}"
 
-docker run --rm -itd ${DEVICES} --network "${NETWORK}" --name "${CONTAINER}" "${IMAGE}"
+docker rm "${CONTAINER}"
+docker run --restart always -itd ${DEVICES} --network "${NETWORK}" --name "${CONTAINER}" "${IMAGE}"
 
 #old...
 #docker run --rm -itd -v /home/carlpeto/hapjs-docker/accessories:/HAP-NodeJS/accessories --device /dev/i2c-1:/dev/i2c-1 --network my-macvlan-net --name my-hapjs carlos4242/raspberrypi:hapjs-new

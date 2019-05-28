@@ -10,6 +10,7 @@ usage() {
   echo ""
   echo "Usage ${0} <your docker username>/<repo>:<tag>"
   echo "...to build an image..."
+  echo "e.g. ${0} dreebor/raspberrypi:lamp-hap"
   echo ""
   echo "Usage ${0} <your docker username>/<repo>:<tag> -r <container name>  -n <network name> -i <i2c bus number>"
   echo "...to build and run the image."

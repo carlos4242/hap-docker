@@ -3,51 +3,29 @@ var Service = require('../').Service;
 var Characteristic = require('../').Characteristic;
 var uuid = require('../').uuid;
 
+const gpioPipe = "/home/carlpeto/node/flasher";
+const lightsPin = 18;
 
-
-
-
-
-// i2c
-// var i2c = require('i2c');
-// var address = 0x18;
-// var wire = new i2c(address, {device: '/dev/i2c-1'});
-
-var i2c = require('i2c-bus'), i2c1 = i2c.openSync(1);
-
-console.log("starting lamp script");
-
-function getPowerState() {
-	return i2c1.readByteSync(0x23, 0x07);
-}
+console.log("starting fairy lights script");
 
 function setPowerState(state) {
 	console.log("Setting power state: to %s", state);
-	i2c1.writeByteSync(0x23, 0x07, state);
+
+  fs.exists(gpioPipe, function(exists) {
+  if (exists) {
+
+    var writableStream = fs.createWriteStream(gpioPipe);
+
+    if (state) {
+      writableStream.write('p:'+lightsPin+':001\n'); 
+    } else {
+      writableStream.write('p:'+lightsPin+':000\n'); 
+    }
+  }
 }
 
-function getBrightness() {
-	return 105 - i2c1.readByteSync(0x23, 0x06);
-}
-
-function setBrightness(brightness) {
-	console.log("Setting brightness: to %s", brightness);
-	i2c1.writeByteSync(0x23, 0x06, 105 - brightness);
-}
-
-var CornerLampState = {
-  // powerOn: false,
-  // brightness: 0,
-	powerOn = getPowerState(),
-	brightness = getBrightness(),
-  getPowerOn: function() {
-    CornerLampState.powerOn = getPowerState();
-    return CornerLampState.powerOn;
-  },
-  getBrightness: function() {
-    CornerLampState.brightness = getBrightness();
-    return CornerLampState.brightness;
-  },
+var FairyLightsState = {
+	powerOn = false,
 	setPowerOn: function(on) {
 
     if(on){
@@ -57,30 +35,21 @@ var CornerLampState = {
       setPowerState(0);
     }
 
-    CornerLampState.powerOn = on;
-  },
-  setBrightness: function(value) {
-    console.log("Setting brightness to %s", value);
-    CornerLampState.brightness = value;
-    setBrightness(value);
+    FairyLightsState.powerOn = on;
   },
   identify: function() {
-    CornerLampState.powerOn = getPowerState();
-		CornerLampState.brightness = getBrightness();
+    FairyLightsState.powerOn = false;
     console.log("Lamp Identified!");
   }
 }
 
-// CornerLampState.powerOn = getPowerState();
-// CornerLampState.brightness = getBrightness();
-
 // This is the Accessory that we'll return to HAP-NodeJS that represents our fake fan.
-var lamp = exports.accessory = new Accessory('Corner Lamp', uuid.generate('hap-nodejs:accessories:Lamp2'));
+var fairy = exports.accessory = new Accessory('Fairy Lights', uuid.generate('hap-nodejs:accessories:FairyLights1'));
 
 // Add properties for publishing (in case we're using Core.js and not BridgedCore.js)
-lamp.username = "1B:2B:3C:4D:5E:FF";
-lamp.pincode = "033-45-157";
-lamp.category = Accessory.Categories.LIGHTBULB;
+fairy.username = "1B:2B:3C:4D:5E:FF";
+fairy.pincode = "033-45-157";
+fairy.category = Accessory.Categories.LIGHTBULB;
 
 // set some basic properties (these values are arbitrary and setting them is optional)
 lamp
@@ -89,7 +58,7 @@ lamp
 
 // listen for the "identify" event for this Accessory
 lamp.on('identify', function(paired, callback) {
-  CornerLampState.identify();
+  FairyLightsState.identify();
   callback(); // success
 });
 
@@ -99,7 +68,7 @@ lamp
   .addService(Service.Lightbulb, "Lightbulb") // services exposed to the user should have "names" like "Fake Light" for us
   .getCharacteristic(Characteristic.On)
   .on('set', function(value, callback) {
-    CornerLampState.setPowerOn(value);
+    FairyLightsState.setPowerOn(value);
     callback(); // Our fake Fan is synchronous - this value has been successfully set
   });
 
@@ -116,23 +85,10 @@ lamp
 
     var err = null; // in case there were any problems
 
-    if (CornerLampState.getPowerState()) {
+    if (FairyLightsState.powerOn) {
       callback(err, true);
     }
     else {
       callback(err, false);
     }
   });
-
-lamp
-  .getService(Service.Lightbulb)
-  .addCharacteristic(Characteristic.Brightness)
-  .on('get', function(callback) {
-    callback(null, CornerLampState.getBrightness());
-  })
-  .on('set', function(value, callback) {
-    CornerLampState.setBrightness(value);
-    callback();
-  });
-
-
